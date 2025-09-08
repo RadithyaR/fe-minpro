@@ -124,7 +124,9 @@ const Navbar = () => {
                     >
                       {/* Username */}
                       <div className="px-4 py-3 border-b border-gray-100">
-                        <p className="text-sm font-medium text-gray-900">{user.username}</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {user.username}
+                        </p>
                         <p className="text-xs text-gray-500 capitalize">
                           {user.role.replace("_", " ")}
                         </p>
@@ -172,17 +174,16 @@ const Navbar = () => {
                 </Menu>
               </>
             ) : (
-              
               //button Sign In & Sign Up
               <>
                 <Link href="/sign-in">
-                  <button className="text-white bg-[#55AFF8] hover:bg-[#3B82F6] font-medium rounded-lg text-sm px-4 py-2 transition-colors">
+                  <button className="text-white bg-[#55AFF8] hover:bg-[#3B82F6] font-medium rounded-lg text-sm px-4 py-2 transition-colors cursor-pointer">
                     Sign In
                   </button>
                 </Link>
 
                 <Link href="/sign-up">
-                  <button className="text-white bg-[#55AFF8] hover:bg-[#3B82F6] font-medium rounded-lg text-sm px-4 py-2 transition-colors">
+                  <button className="text-white bg-[#55AFF8] hover:bg-[#3B82F6] font-medium rounded-lg text-sm px-4 py-2 transition-colors cursor-pointer">
                     Sign Up
                   </button>
                 </Link>

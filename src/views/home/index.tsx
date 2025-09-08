@@ -1,8 +1,36 @@
+"use client";
 import Layout from "@/components/layout";
+import axios from "axios";
 import Image from "next/image";
 import Link from "next/link";
+import { EventFormikValues, EventResponse } from "../create-event/type";
+import { useEffect, useState } from "react";
 
 const HomeView = () => {
+  const [ev, setEv] = useState<EventResponse[]>([]);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const res = await axios.get("http://localhost:8000/events");
+        setEv(res.data);
+      } catch (err) {
+        console.error("Error fetching events:", err);
+      }
+    };
+
+    fetchEvents();
+  }, []);
+
+  // Fungsi untuk memformat tanggal
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("id-ID", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
   return (
     <Layout>
       <div className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
@@ -42,35 +70,59 @@ const HomeView = () => {
               </div>
             </div>
           </div>
+
+          {/* Menampilkan pesan jika tidak ada event */}
+          {ev.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">
+                No events available at the moment.
+              </p>
+            </div>
+          )}
+
+          {/* tampilkan event */}
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            <div className="group flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all hover:shadow-lg">
-              <div className="relative aspect-video w-full overflow-hidden">
-                <Image
-                  alt="Tech Conference"
-                  src="/static/event.jpg"
-                  fill
-                  style={{ objectFit: "cover" }}
-                  className="transition-transform duration-300 group-hover:scale-105"
-                />
-              </div>
-              <div className="flex flex-1 flex-col p-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Tech Conference 2024
-                </h3>
-                <p className="mt-1 text-sm text-gray-600">
-                  San Francisco, CA | Oct 15-17
-                </p>
-                <div className="mt-4 flex items-center justify-between">
-                  <button className="text-[var(--primary-500)] transition-colors hover:text-[var(--primary-600)] cursor-pointer">
-                    <Link href="/event-detail">
-                      <span className="material-symbols-outlined">
-                        arrow_forward
-                      </span>
-                    </Link>
-                  </button>
+            {ev.map((event) => (
+              <div
+                key={event.id}
+                className="group flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all hover:shadow-lg"
+              >
+                <div className="relative aspect-video w-full overflow-hidden">
+                  <Image
+                    alt={event.name || "Untitled Event"}
+                    src={
+                      event.eventImage
+                        ? `http://localhost:8000/${event.eventImage}`
+                        : "/static/event.jpg"
+                    }
+                    fill
+                    style={{ objectFit: "cover" }}
+                    className="transition-transform duration-300 group-hover:scale-105"
+                  />
+                </div>
+                <div className="flex flex-1 flex-col p-4">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {event.name || "Untitled Event"}
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-600">
+                    {event.city || event.locationType} |{" "}
+                    {event.startDate
+                      ? formatDate(event.startDate)
+                      : "Date not specified"}
+                    | {event.status}
+                  </p>
+                  <div className="mt-4 flex items-center justify-between">
+                    <button className="text-[var(--primary-500)] transition-colors hover:text-[var(--primary-600)] cursor-pointer">
+                      <Link href={`/event-detail/${event.id}`}>
+                        <span className="material-symbols-outlined text-blue-600">
+                          details...
+                        </span>
+                      </Link>
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
