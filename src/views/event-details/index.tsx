@@ -6,13 +6,15 @@ import React, { use, useEffect, useState } from "react";
 import { EventResponse } from "../create-event/type";
 import axios from "axios";
 
-const EventDetailView = ({ eventId }: { eventId: string }) => {
-  const [ev, setEv] = useState<EventResponse[]>([]);
+const EventDetailView = ({ params }: { params: Promise<{ slug: string }> }) => {
+  const { slug } = use(params);
+  console.log("id: ", slug);
+  const [ev, setEv] = useState<EventResponse | null>(null);
   useEffect(() => {
     const fetchEvent = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:8000/event-detail/${eventId}`
+          `http://localhost:8000/event-detail/${slug}`
         );
         setEv(res.data);
       } catch (err) {
@@ -21,7 +23,7 @@ const EventDetailView = ({ eventId }: { eventId: string }) => {
     };
 
     fetchEvent();
-  }, [eventId]);
+  }, [slug]);
 
   if (!ev) {
     return (
@@ -69,148 +71,104 @@ const EventDetailView = ({ eventId }: { eventId: string }) => {
             </Link>
             <span className="text-[var(--text-secondary)]">/</span>
 
-            <span className="text-[var(--text-primary)]">Event Detail</span>
+            <span className="text-[var(--text-primary)]">{ev.name}</span>
           </div>
-          {ev.map((event) => (
-            <div className="grid grid-cols-1 gap-12 lg:grid-cols-3">
-              <div className="lg:col-span-2">
-                <div className="mb-6 overflow-hidden rounded-2xl shadow-lg">
-                  <div className="relative aspect-[16/9] w-full">
-                    <Image
-                      src={event.name}
-                      alt={
-                        event.eventImage
-                          ? `http://localhost:8000/${event.eventImage}`
-                          : "/static/event.jpg"
-                      }
-                      fill
-                      style={{ objectFit: "cover" }}
-                      priority
-                    />
-                  </div>
-                </div>
-
-                <div className="mb-8">
-                  <p className="mb-2 text-sm font-semibold text-[var(--primary-color)]">
-                    Hosted by {event.user?.fullName || "Innovate Solutions"}
-                  </p>
-                  <h2 className="text-4xl font-bold tracking-tighter text-[var(--text-primary)]">
-                    {event.name}
-                  </h2>
-                </div>
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="mb-3 text-xl font-bold text-[var(--text-primary)]">
-                      About this event
-                    </h3>
-                    <p className="text-base leading-relaxed text-[var(--text-secondary)]">
-                      {event.description || "No description"}
-                    </p>
-                  </div>
-                  <div>
-                    <h3 className="mb-3 text-xl font-bold text-[var(--text-primary)]">
-                      What you'll learn
-                    </h3>
-                    <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <li className="flex items-center gap-3">
-                        <span className="material-symbols-outlined text-xl text-[var(--primary-color)]">
-                          check_circle
-                        </span>
-                        <span className="text-base text-[var(--text-secondary)]">
-                          Latest trends in AI and Machine Learning
-                        </span>
-                      </li>
-                      <li className="flex items-center gap-3">
-                        <span className="material-symbols-outlined text-xl text-[var(--primary-color)]">
-                          check_circle
-                        </span>
-                        <span className="text-base text-[var(--text-secondary)]">
-                          The future of Web3 and blockchain
-                        </span>
-                      </li>
-                      <li className="flex items-center gap-3">
-                        <span className="material-symbols-outlined text-xl text-[var(--primary-color)]">
-                          check_circle
-                        </span>
-                        <span className="text-base text-[var(--text-secondary)]">
-                          Sustainable technology solutions
-                        </span>
-                      </li>
-                      <li className="flex items-center gap-3">
-                        <span className="material-symbols-outlined text-xl text-[var(--primary-color)]">
-                          check_circle
-                        </span>
-                        <span className="text-base text-[var(--text-secondary)]">
-                          Cybersecurity best practices
-                        </span>
-                      </li>
-                    </ul>
-                  </div>
+          <div className="grid grid-cols-1 gap-12 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <div className="mb-6 overflow-hidden rounded-2xl shadow-lg">
+                <div className="relative aspect-[16/9] w-full">
+                  <Image
+                    alt={ev.name}
+                    src={
+                      ev.eventImage
+                        ? `http://localhost:8000/${ev.eventImage}`
+                        : "/static/event.jpg"
+                    }
+                    fill
+                    style={{ objectFit: "cover" }}
+                    priority
+                  />
                 </div>
               </div>
-              <div className="lg:col-span-1">
-                <div className="sticky top-28 rounded-2xl border border-[var(--border-color)] bg-white p-6 shadow-sm">
-                  <h3 className="mb-4 text-xl font-bold text-[var(--text-primary)]">
-                    Event Details
+
+              <div className="mb-8">
+                <p className="mb-2 text-sm font-semibold text-[var(--primary-color)]">
+                  Hosted by {ev.user?.fullName || "Innovate Solutions"}
+                </p>
+                <h2 className="text-4xl font-bold tracking-tighter text-[var(--text-primary)]">
+                  {ev.name}
+                </h2>
+              </div>
+              <div className="space-y-6">
+                <div>
+                  <h3 className="mb-3 text-xl font-bold text-[var(--text-primary)]">
+                    About this event
                   </h3>
-                  <div className="space-y-2">
-                    <div className="detail-item border-none pt-0">
-                      <div className="detail-label">
-                        <span className="material-symbols-outlined">sell</span>
-                      </div>
-                      <div className="detail-info">
-                        <p className="detail-title">Price</p>
-                        <p className="detail-value text-lg font-semibold text-[var(--primary-color)]">
-                          {event.price}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="detail-item">
-                      <div className="detail-label">
-                        <span className="material-symbols-outlined">
-                          calendar_month
-                        </span>
-                      </div>
-                      <div className="detail-info">
-                        <p className="detail-title">Date</p>
-                        <p className="detail-value">
-                          {formatDate(event.startDate)} -{" "}
-                          {formatDate(event.endDate)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="detail-item">
-                      <div className="detail-label">
-                        <span className="material-symbols-outlined">
-                          schedule
-                        </span>
-                      </div>
-                      <div className="detail-info">
-                        <p className="detail-title">Time</p>
-                        <p className="detail-value">9:00 AM - 5:00 PM</p>
-                      </div>
-                    </div>
-                    <div className="detail-item">
-                      <div className="detail-label">
-                        <span className="material-symbols-outlined">
-                          groups
-                        </span>
-                      </div>
-                      <div className="detail-info">
-                        <p className="detail-title">Available Seats</p>
-                        <p className="detail-value">{event.availableSeats}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <Link href="/event-detail/checkout">
-                    <button className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl px-5 text-base font-bold btn-primary cursor-pointer bg-blue-700 hover:bg-blue-500">
-                      <span className="truncate text-white">Buy Tickets</span>
-                    </button>
-                  </Link>
+                  <p className="text-base leading-relaxed text-[var(--text-secondary)]">
+                    {ev.description || "No description"}
+                  </p>
                 </div>
               </div>
             </div>
-          ))}
+            <div className="lg:col-span-1">
+              <div className="sticky top-28 rounded-2xl border border-[var(--border-color)] bg-white p-6 shadow-sm">
+                <h3 className="mb-4 text-xl font-bold text-[var(--text-primary)]">
+                  Event Details
+                </h3>
+                <div className="space-y-2">
+                  <div className="detail-item border-none pt-0">
+                    <div className="detail-label">
+                      <span className="material-symbols-outlined">sell</span>
+                    </div>
+                    <div className="detail-info">
+                      <p className="detail-title">Price</p>
+                      <p className="detail-value text-lg font-semibold text-[var(--primary-color)]">
+                        {ev.price}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="detail-item">
+                    <div className="detail-label">
+                      <span className="material-symbols-outlined">
+                        calendar_month
+                      </span>
+                    </div>
+                    <div className="detail-info">
+                      <p className="detail-title">Date</p>
+                      <p className="detail-value">
+                        {formatDate(ev.startDate)} - {formatDate(ev.endDate)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="detail-item">
+                    <div className="detail-label">
+                      <span className="material-symbols-outlined">
+                        schedule
+                      </span>
+                    </div>
+                    <div className="detail-info">
+                      <p className="detail-title">Status</p>
+                      <p className="detail-value">{ev.status}</p>
+                    </div>
+                  </div>
+                  <div className="detail-item">
+                    <div className="detail-label">
+                      <span className="material-symbols-outlined">groups</span>
+                    </div>
+                    <div className="detail-info">
+                      <p className="detail-title">Available Seats</p>
+                      <p className="detail-value">{ev.availableSeats}</p>
+                    </div>
+                  </div>
+                </div>
+                <Link href="/event-detail/checkout">
+                  <button className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl px-5 text-base font-bold btn-primary cursor-pointer bg-blue-700 hover:bg-blue-500">
+                    <span className="truncate text-white">Buy Tickets</span>
+                  </button>
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </Layout>

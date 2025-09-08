@@ -1,9 +1,12 @@
 import EventDetailView from "@/views/event-details";
 import React, { use } from "react";
 
-const EventDetail = async ({ params }: { params: Promise<{ id: string }> }) => {
-  const { id } = await params;
-  return <EventDetailView eventId={id} />;
+const EventDetail = async ({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) => {
+  return <EventDetailView params={params} />;
 };
 
 export default EventDetail;
