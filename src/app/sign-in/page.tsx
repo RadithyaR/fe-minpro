@@ -36,7 +36,8 @@ export default function LoginPage() {
       if (accounts) {
         localStorage.setItem("accounts", JSON.stringify(accounts));
         const activeAccount =
-          accounts.find((a: any) => a.role === "event_organizer") || accounts[0];
+          accounts.find((a: any) => a.role === "event_organizer") ||
+          accounts[0];
         localStorage.setItem("activeAccount", JSON.stringify(activeAccount));
       }
 
