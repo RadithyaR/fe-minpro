@@ -47,6 +47,7 @@ const EventDetailView = ({ params }: { params: Promise<{ slug: string }> }) => {
       </Layout>
     );
   }
+  const isFinished = ev.status === "finished";
 
   // Fungsi untuk memformat tanggal
   const formatDate = (dateString: string) => {
@@ -161,11 +162,29 @@ const EventDetailView = ({ params }: { params: Promise<{ slug: string }> }) => {
                     </div>
                   </div>
                 </div>
-                <Link href="/event-detail/checkout">
-                  <button className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl px-5 text-base font-bold btn-primary cursor-pointer bg-blue-700 hover:bg-blue-500">
-                    <span className="truncate text-white">Buy Tickets</span>
+                {isFinished ? (
+                  // Tombol disabled untuk event yang sudah finished
+                  <button
+                    disabled
+                    className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl px-5 text-base font-bold cursor-not-allowed bg-gray-400 text-white"
+                  >
+                    <span className="truncate">EVENT FINISHED</span>
                   </button>
-                </Link>
+                ) : (
+                  // Tombol normal untuk event yang aktif
+                  <Link href={`/event-detail/checkout?eventId=${ev.id}`}>
+                    <button className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl px-5 text-base font-bold btn-primary cursor-pointer bg-blue-700 hover:bg-blue-500 text-white">
+                      <span className="truncate">Buy Tickets</span>
+                    </button>
+                  </Link>
+                )}
+
+                {/* Pesan untuk event finished */}
+                {isFinished && (
+                  <p className="mt-3 text-sm text-gray-500 text-center">
+                    This event has already finished. Ticket sales are closed.
+                  </p>
+                )}
               </div>
             </div>
           </div>

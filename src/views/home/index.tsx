@@ -108,7 +108,7 @@ const HomeView = () => {
                     {event.city || event.locationType} |{" "}
                     {event.startDate
                       ? formatDate(event.startDate)
-                      : "Date not specified"}
+                      : "Date not specified"}{" "}
                     | {event.status}
                   </p>
                   <div className="mt-4 flex items-center justify-between">
