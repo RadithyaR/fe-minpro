@@ -52,6 +52,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       localStorage.setItem("user", JSON.stringify(newUser));
       localStorage.setItem("activeAccount", JSON.stringify(targetAcc));
+      localStorage.setItem("role", targetAcc.role);
 
       set({
         user: newUser,
