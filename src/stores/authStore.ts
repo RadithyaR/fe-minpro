@@ -66,6 +66,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.removeItem("user");
     localStorage.removeItem("accounts");
     localStorage.removeItem("activeAccount");
+    localStorage.clear();  
     set({ user: null, accounts: [], activeAccount: null });
   },
 
