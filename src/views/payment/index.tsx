@@ -1,7 +1,8 @@
 import Layout from "@/components/layout";
-import React from "react";
+import React, { use } from "react";
 
-const ConfirmationView = () => {
+const PaymentView = ({ params }: { params: Promise<{ id: string }> }) => {
+  const { id } = use(params);
   return (
     <Layout>
       <div className="flex flex-1 justify-center py-10 lg:py-16">
@@ -128,4 +129,4 @@ const ConfirmationView = () => {
   );
 };
 
-export default ConfirmationView;
+export default PaymentView;

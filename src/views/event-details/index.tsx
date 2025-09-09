@@ -172,7 +172,7 @@ const EventDetailView = ({ params }: { params: Promise<{ slug: string }> }) => {
                   </button>
                 ) : (
                   // Tombol normal untuk event yang aktif
-                  <Link href={`/event-detail/checkout?eventId=${ev.id}`}>
+                  <Link href={`/checkout/${ev.id}`}>
                     <button className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl px-5 text-base font-bold btn-primary cursor-pointer bg-blue-700 hover:bg-blue-500 text-white">
                       <span className="truncate">Buy Tickets</span>
                     </button>
