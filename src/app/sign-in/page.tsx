@@ -27,10 +27,14 @@ export default function LoginPage() {
         password,
       });
 
-      const { token, user, accounts } = res.data;
+      const { token, user, accounts, eventId } = res.data;
 
       // Simpan token
-      localStorage.setItem("token", token);
+      localStorage.setItem("userData", JSON.stringify({
+      id: user.id,
+      token: token,
+      eventId: eventId,
+    }));
 
       // Handle multiple accounts
       if (accounts) {
@@ -42,8 +46,6 @@ export default function LoginPage() {
 
       // ✅ Update Zustand store (otomatis juga simpan ke localStorage lewat signIn)
       signIn(user, accounts);
-
-      console.log("User after login:", user);
 
       // Redirect ke homepage / dashboard
       router.push("/");
