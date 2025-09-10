@@ -56,6 +56,7 @@ const userData = localStorage.getItem("userData");
 const parsed = JSON.parse(userData || "{}");
 const token = parsed.token;
 const Role = localStorage.getItem("role");
+
   // 🔹 Fetch events milik organizer
   useEffect(() => {
     
@@ -374,36 +375,88 @@ const handleSave = async () => {
 
         {/* 🔹 Detail Modal */}
         {viewing && (
-          <Dialog open={!!viewing} onOpenChange={() => setViewing(null)}>
-            <div className="fixed inset-0 flex items-center justify-center bg-black/50">
-              <div className="bg-white p-6 rounded-xl shadow-xl w-[500px] space-y-2">
-                <h3 className="text-lg font-semibold mb-4">{viewing.name}</h3>
-                <p><strong>ID:</strong> {viewing.id}</p>
-                <p><strong>User ID:</strong> {viewing.userId}</p>
-                <p><strong>Description:</strong> {viewing.description}</p>
-                <p><strong>Status:</strong> {viewing.status}</p>
-                <p><strong>Start:</strong> {formatDate(viewing.startDate)}</p>
-                <p><strong>End:</strong> {formatDate(viewing.endDate)}</p>
-                <p><strong>Created:</strong> {formatDate(viewing.createdAt)}</p>
-                <p><strong>Location:</strong> {viewing.locationType}</p>
-                <p><strong>Address:</strong> {viewing.address || "-"}</p>
-                <p><strong>City:</strong> {viewing.city || "-"}</p>
-                <p><strong>Link:</strong> {viewing.link || "-"}</p>
-                <p><strong>Price:</strong> {viewing.price.toLocaleString()}</p>
-                <p><strong>Seats:</strong> {viewing.availableSeats}</p>
-                <p><strong>Image:</strong> {viewing.eventImage ? <img src={`http://localhost:8000/${viewing.eventImage}`} alt="Event" className="w-full h-40 object-cover rounded" /> : "-"}</p>
-                <p><strong>User:</strong> {viewing.user?.email}</p>
-                <p><strong>Statistics:</strong> {JSON.stringify(viewing.statistics)}</p>
-                <p><strong>Transactions:</strong> {viewing.transactions?.length} record(s)</p>
-                <p><strong>Reviews:</strong> {viewing.reviews?.length} review(s)</p>
+            <Dialog open={!!viewing} onOpenChange={() => setViewing(null)}>
+                <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+                <div className="bg-white p-6 rounded-2xl shadow-2xl w-[650px] max-h-[90vh] overflow-y-auto">
+                    {/* Title */}
+                    <h3 className="text-2xl font-bold mb-6 text-center text-gray-800">
+                    {viewing.name}
+                    </h3>
 
-                <div className="mt-4 flex justify-end">
-                  <Button variant="outline" onClick={() => setViewing(null)}>Close</Button>
+                    {/* Detail Section */}
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm text-gray-700">
+                    <p><span className="font-semibold text-gray-900">ID Event:</span> {viewing.id}</p>
+                    <p><span className="font-semibold text-gray-900">Status:</span> 
+                        <span className={`ml-1 px-2 py-0.5 rounded text-xs font-medium
+                        ${viewing.status === "active" ? "bg-green-100 text-green-700" :
+                        viewing.status === "pending" ? "bg-yellow-100 text-yellow-700" : 
+                        "bg-gray-100 text-gray-700"}`}>
+                        {viewing.status}
+                        </span>
+                    </p>
+
+                    <p><span className="font-semibold text-gray-900">Start:</span> {formatDate(viewing.startDate)}</p>
+                    <p><span className="font-semibold text-gray-900">End:</span> {formatDate(viewing.endDate)}</p>
+
+                    <p><span className="font-semibold text-gray-900">Created:</span> {formatDate(viewing.createdAt)}</p>
+                    <p><span className="font-semibold text-gray-900">Location:</span> {viewing.locationType}</p>
+
+                    <p><span className="font-semibold text-gray-900">Address:</span> {viewing.address || "-"}</p>
+                    <p><span className="font-semibold text-gray-900">City:</span> {viewing.city || "-"}</p>
+
+                    <p><span className="font-semibold text-gray-900">Link:</span> 
+                        {viewing.link ? (
+                        <a 
+                            href={viewing.link} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="text-blue-600 hover:underline ml-1"
+                        >
+                            Open
+                        </a>
+                        ) : "-"}
+                    </p>
+                    <p><span className="font-semibold text-gray-900">Price:</span> Rp {viewing.price.toLocaleString()}</p>
+
+                    <p><span className="font-semibold text-gray-900">Seats:</span> {viewing.availableSeats}</p>
+                    <p><span className="font-semibold text-gray-900">User:</span> {viewing.user?.email}</p>
+
+                    <p><span className="font-semibold text-gray-900">Transactions:</span> {viewing.transactions?.length} record(s)</p>
+                    <p><span className="font-semibold text-gray-900">Reviews:</span> {viewing.reviews?.length} review(s)</p>
+                    </div>
+
+                    {/* Description */}
+                    <div className="mt-6 border-t pt-4">
+                    <p className="font-semibold text-gray-900 mb-1">Description:</p>
+                    <p className="text-gray-600 text-sm leading-relaxed">{viewing.description}</p>
+                    </div>
+
+                    {/* Image */}
+                    {viewing.eventImage && (
+                    <div className="mt-6 border-t pt-4">
+                        <p className="font-semibold text-gray-900 mb-2">Image:</p>
+                        <img
+                        src={`http://localhost:8000/${viewing.eventImage}`}
+                        alt="Event"
+                        className="w-full h-56 object-cover rounded-xl border shadow-sm"
+                        />
+                    </div>
+                    )}
+
+                    {/* Footer Button */}
+                    <div className="mt-6 flex justify-end">
+                    <Button 
+                        variant="outline" 
+                        onClick={() => setViewing(null)} 
+                        className="rounded-xl px-6"
+                    >
+                        Close
+                    </Button>
+                    </div>
                 </div>
-              </div>
-            </div>
-          </Dialog>
-        )}
+                </div>
+            </Dialog>
+            )}
       </div>
     </div>
   );
