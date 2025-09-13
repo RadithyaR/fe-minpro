@@ -6,12 +6,14 @@ import { useAuthStore } from "@/stores/authStore";
 import axios from "axios";
 import { EventResponse } from "@/views/create-event/type";
 import checkoutFormSchema from "../schema/CheckoutFormSchema";
+import { useRouter } from "next/navigation";
 
 type CheckoutFormikProps = PropsWithChildren & {
   event: EventResponse;
 };
 
 const CheckoutFormik: FC<CheckoutFormikProps> = ({ children, event }) => {
+  const router = useRouter();
   const { user, activeAccount } = useAuthStore();
 
   const onSubmit = async (
@@ -50,7 +52,7 @@ const CheckoutFormik: FC<CheckoutFormikProps> = ({ children, event }) => {
       if (response.data) {
         const transaction = response.data;
         // Redirect to confirmation page with transaction ID
-        window.location.href = `/confirmation/${transaction.data.id}`;
+        router.push(`/payment/${transaction.data.id}`);
       }
     } catch (error: any) {
       console.error("Transaction error:", error);
