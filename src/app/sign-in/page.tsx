@@ -33,6 +33,7 @@ export default function LoginPage() {
       localStorage.setItem("userData", JSON.stringify({
       id: user.id,
       token: token,
+      role: user.role,
       eventId: eventId,
     }));
 
