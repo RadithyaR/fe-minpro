@@ -47,7 +47,7 @@ const EventDetailView = ({ params }: { params: Promise<{ slug: string }> }) => {
       </Layout>
     );
   }
-  const isFinished = ev.status === "finished";
+  const isFinished = ev.statusEvent !== "INACTIVE";
 
   // Fungsi untuk memformat tanggal
   const formatDate = (dateString: string) => {
@@ -118,22 +118,15 @@ const EventDetailView = ({ params }: { params: Promise<{ slug: string }> }) => {
                 </h3>
                 <div className="space-y-2">
                   <div className="detail-item border-none pt-0">
-                    <div className="detail-label">
-                      <span className="material-symbols-outlined">sell</span>
-                    </div>
                     <div className="detail-info">
-                      <p className="detail-title">Price</p>
+                      <p className="detail-title">Ticket Price</p>
                       <p className="detail-value text-lg font-semibold text-[var(--primary-color)]">
                         {ev.price}
                       </p>
                     </div>
                   </div>
                   <div className="detail-item">
-                    <div className="detail-label">
-                      <span className="material-symbols-outlined">
-                        calendar_month
-                      </span>
-                    </div>
+                    <div className="detail-label"></div>
                     <div className="detail-info">
                       <p className="detail-title">Date</p>
                       <p className="detail-value">
@@ -142,20 +135,6 @@ const EventDetailView = ({ params }: { params: Promise<{ slug: string }> }) => {
                     </div>
                   </div>
                   <div className="detail-item">
-                    <div className="detail-label">
-                      <span className="material-symbols-outlined">
-                        schedule
-                      </span>
-                    </div>
-                    <div className="detail-info">
-                      <p className="detail-title">Status</p>
-                      <p className="detail-value">{ev.status}</p>
-                    </div>
-                  </div>
-                  <div className="detail-item">
-                    <div className="detail-label">
-                      <span className="material-symbols-outlined">groups</span>
-                    </div>
                     <div className="detail-info">
                       <p className="detail-title">Available Seats</p>
                       <p className="detail-value">{ev.availableSeats}</p>

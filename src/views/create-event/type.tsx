@@ -28,6 +28,7 @@ export interface EventResponse {
   endDate: string;
   availableSeats: number;
   createdAt: string;
+  statusEvent: string;
   user?: {
     fullName: string;
   };
