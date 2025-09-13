@@ -11,6 +11,9 @@ const HomeView = () => {
   const [ev, setEv] = useState<EventResponse[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<EventResponse[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [dateFilter, setDateFilter] = useState<"all" | "upcoming" | "past">(
+    "upcoming"
+  );
   const [isLoading, setIsLoading] = useState(true);
 
   const [debouncedSearchQuery] = useDebounce(searchQuery, 300);
@@ -21,11 +24,7 @@ const HomeView = () => {
         setIsLoading(true);
         const res = await axios.get("http://localhost:8000/events");
         setEv(res.data);
-        const activeEvents = res.data.filter(
-          (event: EventResponse) =>
-            event.statusEvent === "ACTIVE" || event.statusEvent === "ACTIVE"
-        );
-        setFilteredEvents(activeEvents);
+        setFilteredEvents(filterEventsByDate(res.data, "upcoming"));
       } catch (err) {
         console.error("Error fetching events:", err);
       } finally {
@@ -36,21 +35,40 @@ const HomeView = () => {
     fetchEvents();
   }, []);
 
+  const filterEventsByDate = (
+    events: EventResponse[],
+    filter: "all" | "upcoming" | "past"
+  ) => {
+    const now = new Date();
+
+    switch (filter) {
+      case "upcoming":
+        return events.filter(
+          (event) => event.endDate && new Date(event.endDate) >= now
+        );
+      case "past":
+        return events.filter(
+          (event) => event.endDate && new Date(event.endDate) < now
+        );
+      case "all":
+      default:
+        return events;
+    }
+  };
+
   useEffect(() => {
-    if (!debouncedSearchQuery.trim()) {
-      const activeEvents = ev.filter(
-        (event) =>
-          event.statusEvent === "ACTIVE" || event.statusEvent === "ACTIVE"
+    let result = ev;
+
+    result = filterEventsByDate(result, dateFilter);
+
+    if (debouncedSearchQuery.trim()) {
+      result = result.filter((event) =>
+        event.name?.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
       );
-      setFilteredEvents(activeEvents);
-      return;
     }
 
-    const filtered = ev.filter((event) =>
-      event.name?.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
-    );
-    setFilteredEvents(filtered);
-  }, [debouncedSearchQuery, ev]);
+    setFilteredEvents(result);
+  }, [debouncedSearchQuery, ev, dateFilter]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -61,25 +79,6 @@ const HomeView = () => {
     });
   };
 
-  const getStatusBadge = (event: EventResponse) => {
-    const status = event.statusEvent;
-
-    if (status === "ACTIVE") {
-      return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-          Active
-        </span>
-      );
-    } else if (status === "INACTIVE") {
-      return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-          Inactive
-        </span>
-      );
-    }
-
-    return null;
-  };
   return (
     <Layout>
       <div className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
@@ -94,46 +93,78 @@ const HomeView = () => {
           </div>
 
           <div className="mb-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth="1.5"
-                    stroke="currentColor"
-                    className="w-5 h-5 text-gray-400"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-                    />
-                  </svg>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-5">
+              {/* Search Input - 2 kolom pada layar besar */}
+              <div className="sm:col-span-2">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth="1.5"
+                      stroke="currentColor"
+                      className="w-5 h-5 text-gray-400"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                      />
+                    </svg>
+                  </div>
+                  <input
+                    className="block w-full rounded-lg border-gray-300 bg-gray-50 py-3 pl-10 pr-4 text-gray-900 placeholder-gray-500 focus:border-[var(--primary-500)] focus:ring-1 focus:ring-[var(--primary-500)]"
+                    placeholder="Search events by name..."
+                    type="search"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
                 </div>
-                <input
-                  className="block w-full rounded-lg border-gray-300 bg-gray-50 py-3 pl-10 pr-4 text-gray-900 placeholder-gray-500 focus:border-[var(--primary-500)] focus:ring-1 focus:ring-[var(--primary-500)]"
-                  placeholder="Search events by name..."
-                  type="search"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <div className="h-full flex flex-col justify-center">
+                  <select
+                    id="date-filter"
+                    className="block w-full rounded-lg border-gray-300 bg-gray-50 py-3 px-4 text-gray-900 focus:border-[var(--primary-500)] focus:ring-1 focus:ring-[var(--primary-500)]"
+                    value={dateFilter}
+                    onChange={(e) =>
+                      setDateFilter(
+                        e.target.value as "all" | "upcoming" | "past"
+                      )
+                    }
+                  >
+                    <option value="all">All Events</option>
+                    <option value="upcoming">Upcoming Events</option>
+                    <option value="past">Past Events</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="sm:col-span-1">
+                <div className="h-full flex items-end">
+                  <button
+                    onClick={() => {
+                      setSearchQuery("");
+                      setDateFilter("upcoming");
+                    }}
+                    className="w-full bg-blue-500 hover:bg-blue-300 text-white py-3 px-4 rounded-lg transition-colors"
+                  >
+                    Clear Filters
+                  </button>
+                </div>
               </div>
             </div>
 
-            {searchQuery && (
+            {(searchQuery || dateFilter !== "upcoming") && (
               <div className="mt-4 flex items-center justify-between">
                 <p className="text-sm text-gray-600">
-                  Menampilkan {filteredEvents.length} hasil untuk "{searchQuery}
-                  "
+                  Menampilkan {filteredEvents.length} hasil
+                  {searchQuery && ` untuk "${searchQuery}"`}
+                  {dateFilter === "past" && " (event yang sudah berlalu)"}
+                  {dateFilter === "all" && " (semua event)"}
                 </p>
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="text-sm text-blue-600 hover:text-blue-800"
-                >
-                  Clear search
-                </button>
               </div>
             )}
           </div>
@@ -182,18 +213,6 @@ const HomeView = () => {
                       style={{ objectFit: "cover" }}
                       className="transition-transform duration-300 group-hover:scale-105"
                     />
-                    <div className="absolute top-2 right-2">
-                      {getStatusBadge(event)}
-                    </div>
-
-                    {(event.statusEvent === "INACTIVE" ||
-                      event.status === "INACTIVE") && (
-                      <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-                        <span className="text-white font-bold text-lg">
-                          Tidak Aktif
-                        </span>
-                      </div>
-                    )}
                   </div>
                   <div className="flex flex-1 flex-col p-4">
                     <h3 className="text-lg font-semibold text-gray-900">
