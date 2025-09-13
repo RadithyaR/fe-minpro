@@ -31,22 +31,6 @@ export default function DashboardPage() {
         router.push("/sign-in");
         return;
       } setAuthenticated(true);
-
-      // try {
-      //   const res = await fetch("http://localhost:8000/api/auth/verify", {
-      //     headers: { Authorization: `Bearer ${parsed.token}` },
-      //   });
-
-      //   if (!res.ok) {
-      //     router.push("/sign-in");
-      //     return;
-      //   }
-
-      //   setAuthenticated(true);
-      // } catch (err) {
-      //   console.error("Token check failed", err);
-      //   router.push("/sign-in");
-      // }
     };
 
     checkAuth().finally(() => setLoading(false));
