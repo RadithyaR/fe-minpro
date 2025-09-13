@@ -47,7 +47,7 @@ const EventDetailView = ({ params }: { params: Promise<{ slug: string }> }) => {
       </Layout>
     );
   }
-  const isFinished = ev.statusEvent !== "INACTIVE";
+  const isFinished = ev.statusEvent !== "ACTIVE";
 
   // Fungsi untuk memformat tanggal
   const formatDate = (dateString: string) => {
