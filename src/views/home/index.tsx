@@ -21,7 +21,11 @@ const HomeView = () => {
         setIsLoading(true);
         const res = await axios.get("http://localhost:8000/events");
         setEv(res.data);
-        setFilteredEvents(res.data);
+        const activeEvents = res.data.filter(
+          (event: EventResponse) =>
+            event.statusEvent === "ACTIVE" || event.statusEvent === "ACTIVE"
+        );
+        setFilteredEvents(activeEvents);
       } catch (err) {
         console.error("Error fetching events:", err);
       } finally {
@@ -34,7 +38,11 @@ const HomeView = () => {
 
   useEffect(() => {
     if (!debouncedSearchQuery.trim()) {
-      setFilteredEvents(ev);
+      const activeEvents = ev.filter(
+        (event) =>
+          event.statusEvent === "ACTIVE" || event.statusEvent === "ACTIVE"
+      );
+      setFilteredEvents(activeEvents);
       return;
     }
 
@@ -52,6 +60,26 @@ const HomeView = () => {
       day: "numeric",
     });
   };
+
+  const getStatusBadge = (event: EventResponse) => {
+    const status = event.statusEvent;
+
+    if (status === "ACTIVE") {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          Active
+        </span>
+      );
+    } else if (status === "INACTIVE") {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+          Inactive
+        </span>
+      );
+    }
+
+    return null;
+  };
   return (
     <Layout>
       <div className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
@@ -65,7 +93,6 @@ const HomeView = () => {
             </p>
           </div>
 
-          {/* Search Section */}
           <div className="mb-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
               <div className="relative">
@@ -95,7 +122,6 @@ const HomeView = () => {
               </div>
             </div>
 
-            {/* Info hasil pencarian */}
             {searchQuery && (
               <div className="mt-4 flex items-center justify-between">
                 <p className="text-sm text-gray-600">
@@ -156,6 +182,18 @@ const HomeView = () => {
                       style={{ objectFit: "cover" }}
                       className="transition-transform duration-300 group-hover:scale-105"
                     />
+                    <div className="absolute top-2 right-2">
+                      {getStatusBadge(event)}
+                    </div>
+
+                    {(event.statusEvent === "INACTIVE" ||
+                      event.status === "INACTIVE") && (
+                      <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                        <span className="text-white font-bold text-lg">
+                          Tidak Aktif
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex flex-1 flex-col p-4">
                     <h3 className="text-lg font-semibold text-gray-900">
