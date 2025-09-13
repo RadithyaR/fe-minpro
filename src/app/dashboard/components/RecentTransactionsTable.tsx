@@ -1,66 +1,101 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Receipt } from "lucide-react";
 
-// mapping status → warna (sesuai chart Transaction Status)
+// Mapping status → warna badge
 const statusColors: Record<string, string> = {
-  CANCELLED: "bg-purple-500",
-  EXPIRED: "bg-yellow-500",
-  FAILED: "bg-green-500",
-  PAID: "bg-orange-500",
-  PENDING: "bg-red-500",
-  REFUNDED: "bg-blue-500",
+  CANCELLED: "bg-red-500",     // merah
+  EXPIRED: "bg-yellow-500",    // kuning
+  FAILED: "bg-blue-500",       // biru
+  PAID: "bg-green-500",        // hijau
+  PENDING: "bg-orange-500",    // oranye
+  REFUNDED: "bg-purple-500",   // ungu
 };
 
 
 export default function RecentTransactionsTable() {
   const [data, setData] = useState<any[]>([]);
-
-  const userData = localStorage.getItem("userData");
-  const parsed = JSON.parse(userData || "{}");
-
-    // if (!parsed?.eventId) return; // kalau belum ada, jangan fetch
-
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`http://localhost:8000/api/transactions/status/recent?eventId=${parsed.eventId}`)
-      .then((res) => res.json())
-      .then((json) => setData(json));
+    const userData = localStorage.getItem("userData");
+    const parsed = JSON.parse(userData || "{}");
+
+    const fetchTx = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:8000/api/transactions/status/recent?eventId=${parsed.eventId}`
+        );
+        const json = await res.json();
+        setData(json || []);
+      } catch (err) {
+        console.error("Failed to fetch recent transactions", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTx();
   }, []);
 
+  if (loading) return <p className="text-gray-500">Loading recent transactions...</p>;
+
   return (
-    <div className="bg-white p-4 rounded-xl shadow">
-      <h3 className="text-lg font-semibold mb-4">Recent Transactions</h3>
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-left border-b">
-            <th className="p-2">User</th>
-            <th className="p-2">Event</th>
-            <th className="p-2">Amount</th>
-            <th className="p-2">Status</th>
-            <th className="p-2">Date</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((tx, i) => (
-            <tr key={i} className="border-b last:border-none">
-              <td className="p-2">{tx.user}</td>
-              <td className="p-2">{tx.event}</td>
-              <td className="p-2">Rp {tx.amount.toLocaleString()}</td>
-              <td className="p-2">
-              <span
-                className={`px-2 py-1 rounded text-white text-xs ${
-                  statusColors[tx.status.toUpperCase()] || "bg-gray-400"
-                }`}
-              >
-                {tx.status}
-              </span>
-            </td>
-              <td className="p-2">{tx.date}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="bg-white p-6 rounded-2xl shadow">
+      {/* Title with icon */}
+      <div className="flex items-center gap-2 mb-4">
+        <Receipt className="w-5 h-5 text-blue-600" />
+        <h3 className="text-lg font-bold text-gray-800">Recent Transactions</h3>
+      </div>
+
+      {data.length === 0 ? (
+        <p className="text-gray-500 text-sm italic">No transactions found.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="text-left border-b bg-gray-50 text-gray-600">
+                <th className="px-4 py-3 font-medium">User</th>
+                <th className="px-4 py-3 font-medium">Event</th>
+                <th className="px-4 py-3 font-medium">Amount</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((tx, i) => (
+                <tr
+                  key={i}
+                  className="border-b last:border-none hover:bg-gray-50 transition-colors"
+                >
+                  <td className="px-4 py-3 text-gray-700">{tx.user}</td>
+                  <td className="px-4 py-3 text-gray-700">{tx.event}</td>
+                  <td className="px-4 py-3 font-medium text-gray-900">
+                    Rp {Number(tx.amount).toLocaleString("id-ID")}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`px-3 py-1 rounded-lg text-white text-xs font-semibold ${
+                        statusColors[tx.status?.toUpperCase()] || "bg-gray-400"
+                      }`}
+                    >
+                      {tx.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-600">
+                    {new Date(tx.date).toLocaleDateString("id-ID", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

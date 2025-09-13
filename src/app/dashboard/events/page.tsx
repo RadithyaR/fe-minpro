@@ -2,6 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Input,
+} from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import Sidebar from "../components/Sidebar";
 import { Dialog } from "@/components/ui/dialog";
 
@@ -34,39 +46,47 @@ type Event = {
   };
 };
 
+type EventForm = Omit<Event, "id" | "userId"> & { file?: File };
+
 // helper format tanggal
 const formatDate = (dateStr: string | null | undefined) => {
   if (!dateStr) return "-";
   const d = new Date(dateStr);
-  return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString();
+  return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 };
 
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [editing, setEditing] = useState<Event | null>(null);
   const [viewing, setViewing] = useState<Event | null>(null);
-  type EventForm = Omit<Event, "id" | "userId"> & {
-    file?: File; // biar bisa simpan file upload sementara
-};
+  const [form, setForm] = useState<Partial<EventForm>>({});
+  const [preview, setPreview] = useState<string | null>(null);
 
-const [form, setForm] = useState<Partial<EventForm>>({});
-const [preview, setPreview] = useState<string | null>(null);
+  // 🔹 auth state
+  const [token, setToken] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
 
-const userData = localStorage.getItem("userData");
-const parsed = JSON.parse(userData || "{}");
-const token = parsed.token;
-const Role = localStorage.getItem("role");
+  // 🔹 ambil data user dari localStorage
+  useEffect(() => {
+    const userData = localStorage.getItem("activeAccount");
+    const parsed = JSON.parse(userData || "{}");
+    setToken(parsed.token || null);
+    setRole(localStorage.getItem("role"));
+  }, []);
 
   // 🔹 Fetch events milik organizer
   useEffect(() => {
-    
     if (!token) return;
 
     fetch("http://localhost:8000/api/event/getEventsByOrganizer", {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
-        Role: Role || "",
+        Role: role || "",
       },
     })
       .then((res) => res.json())
@@ -74,20 +94,20 @@ const Role = localStorage.getItem("role");
         if (Array.isArray(data.data)) {
           setEvents(data.data);
         } else {
-          console.error("Unexpected API response:", data);
           setEvents([]);
         }
       })
       .catch((err) => console.error("Fetch error:", err));
-  }, []);
+  }, [token, role]);
 
   // 🔹 Delete event
   const handleDelete = async (id: number) => {
+    if (!token) return;
     await fetch(`http://localhost:8000/api/event/deleteEvent/${id}`, {
       method: "DELETE",
-     headers: {
+      headers: {
         Authorization: `Bearer ${token}`,
-        Role: Role || "",
+        Role: role || "",
       },
     });
     setEvents((prev) => prev.filter((e) => e.id !== id));
@@ -104,359 +124,402 @@ const Role = localStorage.getItem("role");
   };
 
   // 🔹 Save edited event
-const handleSave = async () => {
-  if (!editing) return;
-  if (!token) return;
-  const formData = new FormData();
-  formData.append("name", form.name || "");
-  formData.append("description", form.description || "");
-  formData.append("locationType", form.locationType || "offline");
-  formData.append("address", form.address || "");
-  formData.append("city", form.city || "");
-  formData.append("link", form.link || "");
-  formData.append("startDate", form.startDate || "");
-  formData.append("endDate", form.endDate || "");
-  formData.append("price", String(form.price ?? 0));
-  formData.append("availableSeats", String(form.availableSeats ?? 0));
+  const handleSave = async () => {
+    if (!editing || !token) return;
 
-  // kalau ada file baru
-  if ((form as any).file) {
-    formData.append("eventImage", (form as any).file);
-  } else {
+    const formData = new FormData();
+    formData.append("name", form.name || "");
+    formData.append("description", form.description || "");
+    formData.append("locationType", form.locationType || "offline");
+    formData.append("address", form.address || "");
+    formData.append("city", form.city || "");
+    formData.append("link", form.link || "");
+    formData.append("startDate", form.startDate || "");
+    formData.append("endDate", form.endDate || "");
+    formData.append("price", String(form.price ?? 0));
+    formData.append("availableSeats", String(form.availableSeats ?? 0));
+
     if (form.file) {
-        formData.append("eventImage", form.file);
+      formData.append("eventImage", form.file);
     }
-  }
 
-  const res = await fetch(`http://localhost:8000/api/event/updateEvent/${editing.id}`, {
-    method: "PUT",
-    headers: {
-        Authorization: `Bearer ${token}`,
-        Role: Role || "",
-      },
-    body: formData,
-  });
-
-  if (res.ok) {
-    const data = await res.json();
-    setEvents((prev) =>
-      prev.map((e) => (e.id === data.event.id ? data.event : e))
+    const res = await fetch(
+      `http://localhost:8000/api/event/updateEvent/${editing.id}`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Role: role || "",
+        },
+        body: formData,
+      }
     );
-    setEditing(null);
-  }
-};
+
+    if (res.ok) {
+      const data = await res.json();
+      setEvents((prev) =>
+        prev.map((e) => (e.id === data.event.id ? data.event : e))
+      );
+      setEditing(null);
+    } else {
+      console.error("Update failed", await res.text());
+    }
+  };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-100">
+      {/* Sidebar */}
       <Sidebar />
-      <div className="p-12 bg-white rounded-xl shadow flex-1 overflow-auto space-y-6">
-        <h2 className="text-xl font-bold mb-4">My Events</h2>
 
-        {events.length === 0 ? (
-          <p>No events yet.</p>
-        ) : (
-          <table className="w-full text-sm border">
-            <thead>
-              <tr className="border-b">
-                <th className="p-2">ID</th>
-                <th className="p-2">Name</th>
-                <th className="p-2">Start</th>
-                <th className="p-2">End</th>
-                <th className="p-2">Status</th>
-                <th className="p-2">Price</th>
-                <th className="p-2">Seats</th>
-                <th className="p-2">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {events.map((ev) => (
-                <tr key={ev.id} className="border-b">
-                  <td className="p-2">{ev.id}</td>
-                  <td className="p-2">{ev.name}</td>
-                  <td className="p-2">{formatDate(ev.startDate)}</td>
-                  <td className="p-2">{formatDate(ev.endDate)}</td>
-                  <td className="p-2">{ev.status}</td>
-                  <td className="p-2">{ev.price.toLocaleString()}</td>
-                  <td className="p-2">{ev.availableSeats}</td>
-                  <td className="p-2 flex gap-2">
-                    <Button variant="outline" onClick={() => setViewing(ev)}>
-                      View
-                    </Button>
-                    <Button variant="outline" onClick={() => handleEdit(ev)}>
-                      Edit
-                    </Button>
-                    <Button
-                      className="bg-red-600 text-white"
-                      onClick={() => handleDelete(ev.id)}
-                    >
-                      Delete
-                    </Button>
-                  </td>
+      {/* Main Content */}
+      <div className="flex-1 p-8">
+        <div className="bg-white rounded-2xl shadow p-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">🎭 My Events</h2>
+          {events.length === 0 ? (
+            <p className="text-gray-500 italic">No events yet.</p>
+          ) : (
+            <table className="w-full border border-gray-200 bg-white shadow-xl rounded-xl overflow-hidden">
+              <thead>
+                <tr className="bg-gradient-to-r from-indigo-50 to-indigo-100 text-gray-700 uppercase text-sm">
+                  <th className="p-3 border text-left">ID</th>
+                  <th className="p-3 border text-left">Name</th>
+                  <th className="p-3 border text-center">Start</th>
+                  <th className="p-3 border text-center">End</th>
+                  <th className="p-3 border text-center">Status</th>
+                  <th className="p-3 border text-right">Price</th>
+                  <th className="p-3 border text-center">Seats</th>
+                  <th className="p-3 border text-center">Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+              </thead>
+              <tbody className="text-sm text-gray-700">
+                {events.map((ev, idx) => (
+                  <tr
+                    key={ev.id}
+                    className="odd:bg-white even:bg-gray-50 hover:bg-indigo-50/50 transition-colors"
+                  >
+                    <td className="p-2 border">{ev.id}</td>
+                    <td className="p-2 border font-medium">{ev.name}</td>
+                    <td className="p-2 border text-center">{formatDate(ev.startDate)}</td>
+                    <td className="p-2 border text-center">{formatDate(ev.endDate)}</td>
+                    <td className="p-2 border text-center">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium shadow-sm
+                          ${
+                            ev.status === "active"
+                              ? "bg-green-100 text-green-800"
+                              : ev.status === "pending"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-gray-200 text-gray-800"
+                          }`}
+                      >
+                        {ev.status}
+                      </span>
+                    </td>
+                    <td className="p-2 border text-right font-semibold text-indigo-700">
+                      Rp {ev.price.toLocaleString()}
+                    </td>
+                    <td className="p-2 border text-center">{ev.availableSeats}</td>
+                    <td className="p-2 border text-center">
+                      <div className="flex gap-2 justify-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-full border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                          onClick={() => setViewing(ev)}
+                        >
+                          View
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-full border-orange-200 text-orange-700 hover:bg-orange-50"
+                          onClick={() => handleEdit(ev)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="rounded-full bg-red-600 text-white hover:bg-red-700"
+                          onClick={() => handleDelete(ev.id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
 
         {/* 🔹 Edit Form */}
         {editing && (
-        <div className="mt-6 p-4 border rounded bg-gray-50 space-y-3">
-            <h3 className="text-lg font-semibold mb-1">Edit Event</h3>
-            <p className="text-sm text-gray-600 mb-3">
-            You are editing: <span className="font-medium">{editing.name}</span>
-            </p>
+          <div className="mt-8 bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
+            <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
+              <span className="text-orange-500">✏️</span> Edit Event
+            </h3>
 
-            {/* Preview Image */}
-            {preview ? (
-            <img
-                src={preview}
-                alt="Preview"
-                className="w-full h-48 object-cover rounded mb-2"
-            />
-            ) : form.eventImage ? (
-            <img
-                src={`http://localhost:8000/${form.eventImage}`}
-                alt="Event"
-                className="w-full h-48 object-cover rounded mb-2"
-            />
-            ) : (
-            <div className="w-full h-48 bg-gray-200 flex items-center justify-center rounded mb-2">
-                <span className="text-gray-500">No Image</span>
-            </div>
-            )}
+            {/* Upload Image Section */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium mb-2">Event Image</label>
 
-            {/* Upload Image */}
-            <div>
-            <label className="block text-sm font-medium mb-1">Upload Image</label>
-            <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                    setForm({ ...form, file });
-                    setPreview(URL.createObjectURL(file));
-                }
-                }}
-                className="w-full border p-2 rounded"
-            />
-            </div>
+              <div className="flex items-center gap-4">
+                {/* Preview image */}
+                {preview ? (
+                  <img
+                    src={preview}
+                    alt="Preview"
+                    className="w-32 h-32 object-cover rounded-lg border"
+                  />
+                ) : form.eventImage ? (
+                  <img
+                    src={`http://localhost:8000/${form.eventImage}`}
+                    alt="Event"
+                    className="w-32 h-32 object-cover rounded-lg border"
+                  />
+                ) : (
+                  <div className="w-32 h-32 bg-gray-200 flex items-center justify-center rounded-lg border text-gray-500">
+                    No Image
+                  </div>
+                )}
 
-            {/* Event Name */}
-            <div>
-            <label className="block text-sm font-medium mb-1">Name</label>
-            <input
-                value={form.name || ""}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Event name"
-                className="w-full border p-2 rounded"
-            />
-            </div>
-
-            {/* Description */}
-            <div>
-            <label className="block text-sm font-medium mb-1">Description</label>
-            <textarea
-                value={form.description || ""}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="Description"
-                className="w-full border p-2 rounded"
-            />
-            </div>
-
-            {/* Location Type */}
-            <div>
-            <label className="block text-sm font-medium mb-1">Location Type</label>
-            <select
-                value={form.locationType || "offline"}
-                onChange={(e) =>
-                setForm({ ...form, locationType: e.target.value as "online" | "offline" })
-                }
-                className="w-full border p-2 rounded"
-            >
-                <option value="offline">Offline</option>
-                <option value="online">Online</option>
-            </select>
-            </div>
-
-            {/* Address / City or Link */}
-            {form.locationType === "offline" ? (
-            <>
+                {/* File Input */}
                 <div>
-                <label className="block text-sm font-medium mb-1">Address</label>
-                <input
-                    value={form.address || ""}
-                    onChange={(e) => setForm({ ...form, address: e.target.value })}
-                    placeholder="Address"
-                    className="w-full border p-2 rounded"
-                />
+                  <input
+                    id="file-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setForm({ ...form, file });
+                        setPreview(URL.createObjectURL(file));
+                      }
+                    }}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="file-upload"
+                    className="cursor-pointer inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    📂 Choose File
+                  </label>
+                  {form.file && (
+                    <p className="mt-2 text-sm text-gray-500">{form.file.name}</p>
+                  )}
                 </div>
-                <div>
-                <label className="block text-sm font-medium mb-1">City</label>
+              </div>
+            </div>
+
+            {/* Form Inputs */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium mb-1">Name</label>
                 <input
-                    value={form.city || ""}
-                    onChange={(e) => setForm({ ...form, city: e.target.value })}
-                    placeholder="City"
-                    className="w-full border p-2 rounded"
+                  value={form.name || ""}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Location Type</label>
+                <select
+                  value={form.locationType || "offline"}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      locationType: e.target.value as "online" | "offline",
+                    })
+                  }
+                  className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                >
+                  <option value="offline">Offline</option>
+                  <option value="online">Online</option>
+                </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium mb-1">Description</label>
+                <textarea
+                  value={form.description || ""}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  rows={3}
+                />
+              </div>
+
+              {form.locationType === "offline" ? (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Address</label>
+                    <input
+                      value={form.address || ""}
+                      onChange={(e) => setForm({ ...form, address: e.target.value })}
+                      className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">City</label>
+                    <input
+                      value={form.city || ""}
+                      onChange={(e) => setForm({ ...form, city: e.target.value })}
+                      className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium mb-1">Event Link</label>
+                  <input
+                    value={form.link || ""}
+                    onChange={(e) => setForm({ ...form, link: e.target.value })}
+                    className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
                 </div>
-            </>
-            ) : (
-            <div>
-                <label className="block text-sm font-medium mb-1">Event Link</label>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Start Date</label>
                 <input
-                value={form.link || ""}
-                onChange={(e) => setForm({ ...form, link: e.target.value })}
-                placeholder="Event Link"
-                className="w-full border p-2 rounded"
+                  type="date"
+                  value={form.startDate || ""}
+                  onChange={(e) => setForm({ ...form, startDate: e.target.value })}
+                  className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
-            </div>
-            )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">End Date</label>
+                <input
+                  type="date"
+                  value={form.endDate || ""}
+                  onChange={(e) => setForm({ ...form, endDate: e.target.value })}
+                  className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
 
-            {/* Dates */}
-            <div>
-            <label className="block text-sm font-medium mb-1">Start Date</label>
-            <input
-                type="date"
-                value={form.startDate || ""}
-                onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-                className="w-full border p-2 rounded"
-            />
-            </div>
-            <div>
-            <label className="block text-sm font-medium mb-1">End Date</label>
-            <input
-                type="date"
-                value={form.endDate || ""}
-                onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-                className="w-full border p-2 rounded"
-            />
-            </div>
-
-            {/* Price */}
-            <div>
-            <label className="block text-sm font-medium mb-1">Price</label>
-            <input
-                type="number"
-                value={form.price || 0}
-                onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
-                placeholder="Price"
-                className="w-full border p-2 rounded"
-            />
+              <div>
+                <label className="block text-sm font-medium mb-1">Price</label>
+                <input
+                  type="number"
+                  value={form.price || 0}
+                  onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
+                  className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Seats</label>
+                <input
+                  type="number"
+                  value={form.availableSeats || 0}
+                  onChange={(e) =>
+                    setForm({ ...form, availableSeats: Number(e.target.value) })
+                  }
+                  className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
             </div>
 
-            {/* Available Seats */}
-            <div>
-            <label className="block text-sm font-medium mb-1">Available Seats</label>
-            <input
-                type="number"
-                value={form.availableSeats || 0}
-                onChange={(e) =>
-                setForm({ ...form, availableSeats: Number(e.target.value) })
-                }
-                placeholder="Available Seats"
-                className="w-full border p-2 rounded"
-            />
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-2 mt-3">
-            <Button className="bg-green-600 text-white" onClick={handleSave}>
+            {/* Actions */}
+            <div className="flex gap-3 mt-8">
+              <Button
+                className="bg-green-600 text-white hover:bg-green-700 px-6 py-2 rounded-lg"
+                onClick={handleSave}
+              >
                 Save
-            </Button>
-            <Button variant="outline" onClick={() => setEditing(null)}>
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setEditing(null)}
+                className="px-6 py-2 rounded-lg"
+              >
                 Cancel
-            </Button>
+              </Button>
             </div>
-        </div>
+          </div>
         )}
-
-
 
         {/* 🔹 Detail Modal */}
         {viewing && (
-            <Dialog open={!!viewing} onOpenChange={() => setViewing(null)}>
-                <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-                <div className="bg-white p-6 rounded-2xl shadow-2xl w-[650px] max-h-[90vh] overflow-y-auto">
-                    {/* Title */}
-                    <h3 className="text-2xl font-bold mb-6 text-center text-gray-800">
-                    {viewing.name}
-                    </h3>
+          <Dialog open={!!viewing} onOpenChange={() => setViewing(null)}>
+            <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+              <div className="bg-white p-8 rounded-2xl shadow-2xl w-[700px] max-h-[90vh] overflow-y-auto">
+                <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+                  {viewing.name}
+                </h3>
 
-                    {/* Detail Section */}
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm text-gray-700">
-                    <p><span className="font-semibold text-gray-900">ID Event:</span> {viewing.id}</p>
-                    <p><span className="font-semibold text-gray-900">Status:</span> 
-                        <span className={`ml-1 px-2 py-0.5 rounded text-xs font-medium
-                        ${viewing.status === "active" ? "bg-green-100 text-green-700" :
-                        viewing.status === "pending" ? "bg-yellow-100 text-yellow-700" : 
-                        "bg-gray-100 text-gray-700"}`}>
-                        {viewing.status}
-                        </span>
-                    </p>
-
-                    <p><span className="font-semibold text-gray-900">Start:</span> {formatDate(viewing.startDate)}</p>
-                    <p><span className="font-semibold text-gray-900">End:</span> {formatDate(viewing.endDate)}</p>
-
-                    <p><span className="font-semibold text-gray-900">Created:</span> {formatDate(viewing.createdAt)}</p>
-                    <p><span className="font-semibold text-gray-900">Location:</span> {viewing.locationType}</p>
-
-                    <p><span className="font-semibold text-gray-900">Address:</span> {viewing.address || "-"}</p>
-                    <p><span className="font-semibold text-gray-900">City:</span> {viewing.city || "-"}</p>
-
-                    <p><span className="font-semibold text-gray-900">Link:</span> 
-                        {viewing.link ? (
-                        <a 
-                            href={viewing.link} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="text-blue-600 hover:underline ml-1"
-                        >
-                            Open
-                        </a>
-                        ) : "-"}
-                    </p>
-                    <p><span className="font-semibold text-gray-900">Price:</span> Rp {viewing.price.toLocaleString()}</p>
-
-                    <p><span className="font-semibold text-gray-900">Seats:</span> {viewing.availableSeats}</p>
-                    <p><span className="font-semibold text-gray-900">User:</span> {viewing.user?.email}</p>
-
-                    <p><span className="font-semibold text-gray-900">Transactions:</span> {viewing.transactions?.length} record(s)</p>
-                    <p><span className="font-semibold text-gray-900">Reviews:</span> {viewing.reviews?.length} review(s)</p>
-                    </div>
-
-                    {/* Description */}
-                    <div className="mt-6 border-t pt-4">
-                    <p className="font-semibold text-gray-900 mb-1">Description:</p>
-                    <p className="text-gray-600 text-sm leading-relaxed">{viewing.description}</p>
-                    </div>
-
-                    {/* Image */}
-                    {viewing.eventImage && (
-                    <div className="mt-6 border-t pt-4">
-                        <p className="font-semibold text-gray-900 mb-2">Image:</p>
-                        <img
-                        src={`http://localhost:8000/${viewing.eventImage}`}
-                        alt="Event"
-                        className="w-full h-56 object-cover rounded-xl border shadow-sm"
-                        />
-                    </div>
-                    )}
-
-                    {/* Footer Button */}
-                    <div className="mt-6 flex justify-end">
-                    <Button 
-                        variant="outline" 
-                        onClick={() => setViewing(null)} 
-                        className="rounded-xl px-6"
+                <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm text-gray-700">
+                  <p><b>ID Event:</b> {viewing.id}</p>
+                  <p>
+                    <b>Status:</b>{" "}
+                    <span
+                      className={`ml-1 px-3 py-0.5 rounded-full text-xs font-semibold ${
+                        viewing.status === "active"
+                          ? "bg-green-100 text-green-700"
+                          : viewing.status === "pending"
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-gray-100 text-gray-700"
+                      }`}
                     >
-                        Close
-                    </Button>
-                    </div>
+                      {viewing.status}
+                    </span>
+                  </p>
+                  <p><b>Start:</b> {formatDate(viewing.startDate)}</p>
+                  <p><b>End:</b> {formatDate(viewing.endDate)}</p>
+                  <p><b>Created:</b> {formatDate(viewing.createdAt)}</p>
+                  <p><b>Location:</b> {viewing.locationType}</p>
+                  <p><b>Address:</b> {viewing.address || "-"}</p>
+                  <p><b>City:</b> {viewing.city || "-"}</p>
+                  <p><b>Link:</b>{" "}
+                    {viewing.link ? (
+                      <a
+                        href={viewing.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        Open
+                      </a>
+                    ) : "-"}
+                  </p>
+                  <p><b>Price:</b> Rp {viewing.price.toLocaleString()}</p>
+                  <p><b>Seats:</b> {viewing.availableSeats}</p>
+                  <p><b>User:</b> {viewing.user?.email}</p>
+                  <p><b>Transactions:</b> {viewing.transactions?.length} record(s)</p>
+                  <p><b>Reviews:</b> {viewing.reviews?.length} review(s)</p>
                 </div>
+
+                <div className="mt-6 border-t pt-4">
+                  <p className="font-semibold text-gray-900 mb-2">Description</p>
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    {viewing.description}
+                  </p>
                 </div>
-            </Dialog>
-            )}
+
+                {viewing.eventImage && (
+                  <div className="mt-6 border-t pt-4">
+                    <p className="font-semibold text-gray-900 mb-2">Image</p>
+                    <img
+                      src={`http://localhost:8000/${viewing.eventImage}`}
+                      alt="Event"
+                      className="w-full h-64 object-cover rounded-lg shadow"
+                    />
+                  </div>
+                )}
+
+                <div className="mt-6 flex justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => setViewing(null)}
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Dialog>
+        )}
       </div>
     </div>
   );
