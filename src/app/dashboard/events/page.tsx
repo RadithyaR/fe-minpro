@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import Sidebar from "../components/Sidebar";
 import { Dialog } from "@/components/ui/dialog";
+import ReviewView from "@/views/dashboard-event/ReviewView";
 
 // 🔹 tipe data Event sesuai API
 type Event = {
@@ -84,12 +85,15 @@ export default function EventsPage() {
   const [isCreatingVoucher, setIsCreatingVoucher] = useState(false);
   const [form, setForm] = useState<Partial<EventForm>>({});
   const [preview, setPreview] = useState<string | null>(null);
-
-  // 🔹 auth state
+  const [reviewDialog, setReviewDialog] = useState<{
+    eventId: number;
+    eventName: string;
+  } | null>(null);
+  // auth state
   const [token, setToken] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
 
-  // 🔹 ambil data user dari localStorage
+  // ambil data user dari localStorage
   useEffect(() => {
     const userData = localStorage.getItem("activeAccount");
     const parsed = JSON.parse(userData || "{}");
@@ -97,7 +101,7 @@ export default function EventsPage() {
     setRole(localStorage.getItem("role"));
   }, []);
 
-  // 🔹 Fetch events milik organizer
+  // Fetch events milik organizer
   useEffect(() => {
     if (!token) return;
 
@@ -119,7 +123,7 @@ export default function EventsPage() {
       .catch((err) => console.error("Fetch error:", err));
   }, [token, role]);
 
-  // 🔹 Fetch vouchers untuk event tertentu
+  // Fetch vouchers untuk event tertentu
   const fetchVouchers = async (eventId: number) => {
     if (!token) return;
 
@@ -142,7 +146,7 @@ export default function EventsPage() {
     }
   };
 
-  // 🔹 Create voucher
+  // Create voucher
   const createVoucher = async (eventId: number) => {
     if (!token || !voucherForm.nominal || !voucherForm.quota) return;
 
@@ -176,7 +180,7 @@ export default function EventsPage() {
     }
   };
 
-  // 🔹 Delete voucher
+  // Delete voucher
   const deleteVoucher = async (voucherId: number) => {
     if (!token) return;
 
@@ -203,7 +207,7 @@ export default function EventsPage() {
     }
   };
 
-  // 🔹 Delete event
+  // Delete event
   const handleDelete = async (id: number) => {
     if (!token) return;
     await fetch(`http://localhost:8000/api/event/deleteEvent/${id}`, {
@@ -216,7 +220,7 @@ export default function EventsPage() {
     setEvents((prev) => prev.filter((e) => e.id !== id));
   };
 
-  // 🔹 Start edit mode
+  // Start edit mode
   const handleEdit = (event: Event) => {
     setEditing(event);
     setForm({
@@ -226,7 +230,7 @@ export default function EventsPage() {
     });
   };
 
-  // 🔹 Save edited event
+  // Save edited event
   const handleSave = async () => {
     if (!editing || !token) return;
 
@@ -266,11 +270,15 @@ export default function EventsPage() {
     }
   };
 
-  // 🔹 Open voucher dialog
+  // Open voucher dialog
   const openVoucherDialog = async (event: Event) => {
     setVoucherDialog(event);
     setVouchers([]);
     await fetchVouchers(event.id);
+  };
+
+  const openReviewDialog = (event: Event) => {
+    setReviewDialog({ eventId: event.id, eventName: event.name });
   };
 
   return (
@@ -296,7 +304,7 @@ export default function EventsPage() {
                   <th className="p-3 border text-center">End</th>
                   <th className="p-3 border text-right">Ticket Price</th>
                   <th className="p-3 border text-center">Seats</th>
-                  <th className="p-3 border text-center">voucher</th>
+                  <th className="p-3 border text-center">Voucher</th>
                   <th className="p-3 border text-center">Action</th>
                 </tr>
               </thead>
@@ -342,6 +350,7 @@ export default function EventsPage() {
                         >
                           View
                         </Button>
+
                         <Button
                           variant="outline"
                           size="sm"
@@ -799,6 +808,33 @@ export default function EventsPage() {
                   </div>
                 )}
 
+                <div className="mt-6 border-t pt-4">
+                  <p className="font-semibold text-gray-900 mb-3">Reviews</p>
+
+                  {viewing.reviews && viewing.reviews.length > 0 ? (
+                    <>
+                      {viewing.reviews.length > 0 && (
+                        <div className="flex justify-center">
+                          <Button
+                            variant="default"
+                            onClick={() => {
+                              setViewing(null); // Tutup modal detail
+                              openReviewDialog(viewing); // Buka modal review
+                            }}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            View Reviews
+                          </Button>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-gray-500 text-center py-4">
+                      No reviews yet
+                    </p>
+                  )}
+                </div>
+
                 <div className="mt-6 flex justify-end">
                   <Button variant="outline" onClick={() => setViewing(null)}>
                     Close
@@ -807,6 +843,16 @@ export default function EventsPage() {
               </div>
             </div>
           </Dialog>
+        )}
+
+        {reviewDialog && (
+          <ReviewView
+            isOpen={!!reviewDialog}
+            onClose={() => setReviewDialog(null)}
+            eventId={reviewDialog.eventId}
+            eventName={reviewDialog.eventName}
+            token={token}
+          />
         )}
       </div>
     </div>

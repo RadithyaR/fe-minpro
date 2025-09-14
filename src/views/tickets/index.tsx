@@ -3,8 +3,10 @@ import Layout from "@/components/layout";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
+import ReviewFormik from "./components/ReviewsFormik";
+import ReviewForm from "./components/ReviewForm";
 
-interface Transaction {
+export interface Transaction {
   id: number;
   userId: number;
   eventId: number;
@@ -24,6 +26,11 @@ interface Transaction {
     eventImage: string;
     startDate: string;
     endDate: string;
+    reviews: {
+      id: number;
+      rating: number;
+      comment: string;
+    };
   };
   status: {
     id: number;
@@ -45,6 +52,11 @@ const TicketView = () => {
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [reviewMode, setReviewMode] = useState<"create" | "edit">("create");
+  const [hasReview, setHasReview] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
   // 🔹 auth state
   const [token, setToken] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
@@ -102,6 +114,25 @@ const TicketView = () => {
     }
   }, [userId, token]);
 
+  // Fungsi untuk check apakah user sudah memberikan review
+  const checkUserReview = async (eventId: number) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:8000/review/check/event/${eventId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      return response.data.data.hasReview;
+    } catch (error) {
+      console.error("Error checking review:", error);
+      return false;
+    }
+  };
+
   // Format currency
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -119,6 +150,10 @@ const TicketView = () => {
       year: "numeric",
     });
   };
+  const handleReviewSubmitted = () => {
+    // Optionally refresh data or update state
+    console.log("Review submitted successfully");
+  };
 
   const openModal = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
@@ -128,6 +163,19 @@ const TicketView = () => {
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedTransaction(null);
+  };
+
+  const openReviewModal = async (transaction: Transaction) => {
+    const alreadyReviewed = await checkUserReview(transaction.eventId);
+    setSelectedTransaction(transaction);
+    setReviewMode(alreadyReviewed ? "edit" : "create");
+    setIsReviewModalOpen(true);
+  };
+
+  const closeReviewModal = () => {
+    setIsReviewModalOpen(false);
+    setRating(0);
+    setComment("");
   };
 
   if (isLoading) {
@@ -316,9 +364,13 @@ const TicketView = () => {
                           className={`px-2 py-1 rounded-full text-xs font-medium ${
                             transaction.status.name === "PENDING"
                               ? "bg-yellow-100 text-yellow-800"
-                              : transaction.status.name === "APPROVED"
+                              : transaction.status.name === "DONE"
                               ? "bg-green-100 text-green-800"
                               : transaction.status.name === "REJECTED"
+                              ? "bg-red-100 text-red-800"
+                              : transaction.status.name === "EXPIRED"
+                              ? "bg-red-100 text-red-800"
+                              : transaction.status.name === "CANCELLED"
                               ? "bg-red-100 text-red-800"
                               : "bg-gray-100 text-gray-800"
                           }`}
@@ -369,9 +421,13 @@ const TicketView = () => {
                     className={`px-2 py-1 rounded-full text-xs font-medium ${
                       selectedTransaction.status.name === "PENDING"
                         ? "bg-yellow-100 text-yellow-800"
-                        : selectedTransaction.status.name === "APPROVED"
+                        : selectedTransaction.status.name === "DONE"
                         ? "bg-green-100 text-green-800"
                         : selectedTransaction.status.name === "REJECTED"
+                        ? "bg-red-100 text-red-800"
+                        : selectedTransaction.status.name === "EXPIRED"
+                        ? "bg-red-100 text-red-800"
+                        : selectedTransaction.status.name === "CANCELLED"
                         ? "bg-red-100 text-red-800"
                         : "bg-gray-100 text-gray-800"
                     }`}
@@ -445,16 +501,20 @@ const TicketView = () => {
                 </p>
               </div>
 
-              {selectedTransaction.paymentProof && (
-                <div>
-                  <p className="text-sm text-gray-600">Bukti Pembayaran</p>
+              <div>
+                <p className="text-sm text-gray-600">Bukti Pembayaran</p>
+                {selectedTransaction.paymentProof ? (
                   <img
-                    src={selectedTransaction.paymentProof}
+                    src={`http://localhost:8000/${selectedTransaction.paymentProof}`}
                     alt="Bukti Pembayaran"
                     className="mt-2 rounded-lg max-w-full h-auto"
                   />
-                </div>
-              )}
+                ) : (
+                  <p className="mt-2 text-gray-500 italic">
+                    Belum melakukan pembayaran
+                  </p>
+                )}
+              </div>
 
               {!selectedTransaction.paymentProof &&
                 selectedTransaction.status.name === "PENDING" && (
@@ -473,7 +533,8 @@ const TicketView = () => {
               {/* Pesan untuk status REJECTED atau CANCELLED */}
               {!selectedTransaction.paymentProof &&
                 (selectedTransaction.status.name === "REJECTED" ||
-                  selectedTransaction.status.name === "CANCELLED") && (
+                  selectedTransaction.status.name === "CANCELLED" ||
+                  selectedTransaction.status.name === "EXPIRED") && (
                   <div className="border-t pt-4">
                     <p className="text-center text-red-600 font-medium">
                       Tidak bisa Upload Bukti Transaksi karena{" "}
@@ -481,9 +542,39 @@ const TicketView = () => {
                     </p>
                   </div>
                 )}
+
+              {/* Tombol Review untuk event yang selesai */}
+              {selectedTransaction.status.name === "DONE" && (
+                <div className="border-t pt-4">
+                  <button
+                    onClick={() => openReviewModal(selectedTransaction)}
+                    className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700"
+                  >
+                    {/* Text tombol akan ditentukan saat modal dibuka */}
+                    Lihat Review
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
+      )}
+      {/* Modal Review Event */}
+      {isReviewModalOpen && selectedTransaction && (
+        <ReviewFormik
+          selectedTransaction={selectedTransaction}
+          token={token}
+          onClose={() => setIsReviewModalOpen(false)}
+          mode={reviewMode}
+          onReviewSubmitted={handleReviewSubmitted}
+        >
+          <ReviewForm
+            token={token}
+            selectedTransaction={selectedTransaction}
+            onClose={() => setIsReviewModalOpen(false)}
+            mode={reviewMode}
+          />
+        </ReviewFormik>
       )}
     </Layout>
   );
