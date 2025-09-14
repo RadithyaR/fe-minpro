@@ -10,16 +10,16 @@ const Topbar = () => {
     <div className="flex items-center justify-between mb-6">
       {/* Title + Icon */}
       <div className="flex items-center gap-2">
-        <FileBarChart2 className="w-6 h-6 text-blue-600" />
+        <FileBarChart2 className="w-6 h-6 text-[#55AFF8]" />
         <h1 className="text-2xl font-bold text-gray-800">
-          Report <span className="text-blue-600">{userName}</span>
+          Report <span className="text-[#55AFF8]">{userName}</span>
         </h1>
       </div>
 
       {/* Action Button */}
       <Link href="/create-event">
-        <button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg shadow-md transition-all">
-          + Create Event
+        <button className="bg-[#55AFF8] hover:bg-[#3B82F6] text-white font-semibold px-4 py-2 rounded-lg shadow-md transition-all">
+          Create Event
         </button>
       </Link>
     </div>

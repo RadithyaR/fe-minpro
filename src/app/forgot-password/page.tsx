@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import axios from "axios";
+import { EnvelopeIcon } from "@heroicons/react/24/outline";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -25,39 +26,48 @@ export default function ForgotPasswordPage() {
     }
   };
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-r from-blue-50 to-purple-50 px-4">
-      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-xl">
-        <h1 className="mb-6 text-3xl font-bold text-center text-gray-800">Forgot Password</h1>
+  const inputWrapper = (icon: React.ReactNode, input: React.ReactNode) => (
+    <div className="flex items-center border rounded-xl px-3 py-2 focus-within:ring focus-within:ring-blue-200 transition">
+      <div className="mr-2 text-gray-400">{icon}</div>
+      <div className="flex-1">{input}</div>
+    </div>
+  );
 
-        {/* Error */}
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-tr from-blue-50 to-purple-50 px-4">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8">
+        <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">Forgot Password</h1>
+
+        {/* Feedback */}
         {errorMessage && (
-          <div className="mb-4 rounded-xl border bg-red-50 border-red-200 text-red-800 p-4 shadow-sm text-center">
+          <div className="mb-4 p-4 text-center rounded-xl bg-red-50 border border-red-200 text-red-800">
             {errorMessage}
           </div>
         )}
-
-        {/* Success */}
         {message && (
-          <div className="mb-4 rounded-xl border bg-green-50 border-green-200 text-green-800 p-4 shadow-sm text-center">
+          <div className="mb-4 p-4 text-center rounded-xl bg-green-50 border border-green-200 text-green-800">
             {message}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <input
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-blue-500 focus:ring focus:ring-blue-100 transition"
-            required
-          />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {inputWrapper(
+            <EnvelopeIcon className="h-5 w-5" />,
+            <input
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full border-none focus:ring-0 focus:outline-none text-sm"
+              required
+            />
+          )}
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full rounded-xl bg-blue-600 px-4 py-3 text-white hover:bg-blue-700 disabled:opacity-50 font-semibold transition-colors"
+            disabled={loading || !email}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 transition-all"
+            title={!email ? "Please enter your email" : ""}
           >
             {loading ? "Sending..." : "Send Reset Link"}
           </button>
@@ -65,8 +75,8 @@ export default function ForgotPasswordPage() {
 
         <p className="mt-6 text-center text-sm text-gray-500">
           Back to{" "}
-          <a href="/login" className="font-medium text-blue-600 hover:text-blue-700 transition-colors">
-            Login
+          <a href="/sign-in" className="font-medium text-blue-600 hover:text-blue-700 transition-colors">
+            Sign In
           </a>
         </p>
       </div>
