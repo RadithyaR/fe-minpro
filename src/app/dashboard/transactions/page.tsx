@@ -43,7 +43,7 @@ const statusColors: Record<string, { bg: string; text: string }> = {
   PAID: { bg: "bg-green-100", text: "text-green-800" },
   REJECTED: { bg: "bg-red-100", text: "text-red-800" },
   CANCELLED: { bg: "bg-gray-200", text: "text-gray-800" },
-  REFUNDED: { bg: "bg-blue-100", text: "text-blue-800" },
+  // REFUNDED: { bg: "bg-blue-100", text: "text-blue-800" }
   EXPIRED: { bg: "bg-orange-100", text: "text-orange-800" },
 };
 
@@ -163,9 +163,9 @@ export default function TransactionsPage() {
                 <SelectItem value="ALL">Semua</SelectItem>
                 <SelectItem value="PENDING">PENDING</SelectItem>
                 <SelectItem value="PAID">PAID</SelectItem>
-                <SelectItem value="FAILED">FAILED</SelectItem>
+                <SelectItem value="REJECTED">REJECTED</SelectItem>
                 <SelectItem value="CANCELLED">CANCELLED</SelectItem>
-                <SelectItem value="REFUNDED">REFUNDED</SelectItem>
+                {/*<SelectItem value="REFUNDED">REFUNDED</SelectItem>*/}
                 <SelectItem value="EXPIRED">EXPIRED</SelectItem>
               </SelectContent>
             </Select>
@@ -364,7 +364,7 @@ export default function TransactionsPage() {
 
                 {["PAID"].includes(formatStatus(selectedTx.status)) && (
                   <div className="flex gap-3 mt-4">
-                    <Button
+                    {/*<Button
                       variant="secondary"
                       onClick={() => updateTxStatus(selectedTx.id, "refund")}
                     >
@@ -375,7 +375,7 @@ export default function TransactionsPage() {
                       onClick={() => updateTxStatus(selectedTx.id, "cancel")}
                     >
                       Cancel
-                    </Button>
+                    </Button>*/}
                   </div>
                 )}
               </>

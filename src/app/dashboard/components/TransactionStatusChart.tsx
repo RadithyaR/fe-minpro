@@ -48,7 +48,7 @@ export default function TransactionStatusChart() {
             data={data}
             dataKey="value"
             nameKey="name"
-            outerRadius={90}
+            outerRadius={80}
             label={(entry: any) =>
               `${entry?.name} (${entry?.value?.toLocaleString("id-ID")})`
             }
