@@ -69,6 +69,7 @@ export default function TransactionsPage() {
 
     const url = "http://localhost:8000/api/transactions";
     const res = await fetch(url, {
+      method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
         role: role || "",

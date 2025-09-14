@@ -30,7 +30,7 @@ type Event = {
   startDate: string;
   endDate: string;
   createdAt: string;
-  status: string;
+  statusEvent: string;
   availableSeats: number;
   price: number;
   eventImage: string | null;
@@ -205,14 +205,14 @@ export default function EventsPage() {
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-medium shadow-sm
                           ${
-                            ev.status === "active"
+                            ev.statusEvent === "ACTIVE"
                               ? "bg-green-100 text-green-800"
-                              : ev.status === "pending"
+                              : ev.statusEvent === "PENDING"
                               ? "bg-yellow-100 text-yellow-800"
                               : "bg-gray-200 text-gray-800"
                           }`}
                       >
-                        {ev.status}
+                        {ev.statusEvent}
                       </span>
                     </td>
                     <td className="p-2 border text-right font-semibold text-indigo-700">
@@ -455,14 +455,14 @@ export default function EventsPage() {
                     <b>Status:</b>{" "}
                     <span
                       className={`ml-1 px-3 py-0.5 rounded-full text-xs font-semibold ${
-                        viewing.status === "active"
+                        viewing.statusEvent === "ACTIVE"
                           ? "bg-green-100 text-green-700"
-                          : viewing.status === "pending"
+                          : viewing.statusEvent === "PENDING"
                           ? "bg-yellow-100 text-yellow-700"
                           : "bg-gray-100 text-gray-700"
                       }`}
                     >
-                      {viewing.status}
+                      {viewing.statusEvent}
                     </span>
                   </p>
                   <p><b>Start:</b> {formatDate(viewing.startDate)}</p>
