@@ -5,12 +5,12 @@ import { Receipt } from "lucide-react";
 
 // Mapping status → warna badge
 const statusColors: Record<string, string> = {
-  CANCELLED: "bg-red-500",     // merah
-  EXPIRED: "bg-yellow-500",    // kuning
-  FAILED: "bg-blue-500",       // biru
-  PAID: "bg-green-500",        // hijau
-  PENDING: "bg-orange-500",    // oranye
-  REFUNDED: "bg-purple-500",   // ungu
+  CANCELLED: "bg-gray-400",     // abu-abu
+  EXPIRED: "bg-orange-400",    // oranye
+  REJECTED: "bg-red-400",       // merah
+  PAID: "bg-green-400",        // hijau
+  PENDING: "bg-yellow-400",    // kuning
+  // REFUNDED: "bg-blue-400 ",   // biru
 };
 
 
