@@ -29,6 +29,7 @@ type Tx = {
   discountVoucher?: number;
   discountPoint?: number;
   finalAmount: number;
+  quantity: number;
   status: StatusType;
   paymentProof?: string;
   createdAt: string;
@@ -40,12 +41,13 @@ function formatStatus(status: StatusType): string {
 
 const statusColors: Record<string, { bg: string; text: string }> = {
   PENDING: { bg: "bg-yellow-100", text: "text-yellow-800" },
-  PAID: { bg: "bg-green-100", text: "text-green-800" },
+  PAID: { bg: "bg-blue-100", text: "text-blue-800" },
+  DONE: { bg: "bg-green-100", text: "text-green-800" },
   REJECTED: { bg: "bg-red-100", text: "text-red-800" },
   CANCELLED: { bg: "bg-gray-200", text: "text-gray-800" },
-  REFUNDED: { bg: "bg-blue-100", text: "text-blue-800" },
   EXPIRED: { bg: "bg-orange-100", text: "text-orange-800" },
 };
+
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Tx[]>([]);
@@ -95,7 +97,7 @@ export default function TransactionsPage() {
 
   const updateTxStatus = async (
     id: number,
-    action: "approve" | "reject" | "cancel" | "refund"
+    action: "approve" | "reject" | "cancel"
   ) => {
     if (!token) return;
 
@@ -163,9 +165,9 @@ export default function TransactionsPage() {
                 <SelectItem value="ALL">Semua</SelectItem>
                 <SelectItem value="PENDING">PENDING</SelectItem>
                 <SelectItem value="PAID">PAID</SelectItem>
-                <SelectItem value="FAILED">FAILED</SelectItem>
+                <SelectItem value="DONE">DONE</SelectItem>
+                <SelectItem value="REJECT">REJECT</SelectItem>
                 <SelectItem value="CANCELLED">CANCELLED</SelectItem>
-                <SelectItem value="REFUNDED">REFUNDED</SelectItem>
                 <SelectItem value="EXPIRED">EXPIRED</SelectItem>
               </SelectContent>
             </Select>
@@ -182,6 +184,7 @@ export default function TransactionsPage() {
               <th className="p-3 border text-right">Coupon</th>
               <th className="p-3 border text-right">Voucher</th>
               <th className="p-3 border text-right">Points</th>
+              <th className="p-3 border text-right">Qty</th>   {/* ✅ Tambah kolom Qty */}
               <th className="p-3 border text-right">Final Amount</th>
               <th className="p-3 border text-center">Status</th>
               <th className="p-3 border text-center">Date</th>
@@ -191,10 +194,8 @@ export default function TransactionsPage() {
           </thead>
           <tbody className="text-sm text-gray-700">
             {Object.entries(grouped).map(([eventName, txs]) => {
-              const totalFinal = txs.reduce(
-                (sum, tx) => sum + tx.finalAmount,
-                0
-              );
+              const totalFinal = txs.reduce((sum, tx) => sum + tx.finalAmount, 0);
+              const totalQty = txs.reduce((sum, tx) => sum + tx.quantity, 0); // ✅ hitung qty per event
 
               return (
                 <>
@@ -208,7 +209,7 @@ export default function TransactionsPage() {
                       }))
                     }
                   >
-                    <td colSpan={11} className="p-3 text-left">
+                    <td colSpan={12} className="p-3 text-left">
                       <span className="flex items-center gap-2">
                         <span className="font-bold">{eventName}</span>
                         <span className="text-gray-500">
@@ -250,6 +251,7 @@ export default function TransactionsPage() {
                           <td className="p-2 border text-right">
                             Rp.{(tx.discountPoint || 0).toLocaleString("id-ID")}
                           </td>
+                          <td className="p-2 border text-center">{tx.quantity}</td> {/* ✅ Qty */}
                           <td className="p-2 border font-semibold text-right text-indigo-700">
                             Rp.{tx.finalAmount.toLocaleString("id-ID")}
                           </td>
@@ -296,6 +298,7 @@ export default function TransactionsPage() {
                     <td colSpan={6} className="p-3 text-right">
                       Total {eventName}
                     </td>
+                    <td className="p-3 text-center">{totalQty}</td> {/* ✅ total qty */}
                     <td className="p-3 text-right">
                       Rp.{totalFinal.toLocaleString("id-ID")}
                     </td>
@@ -310,6 +313,9 @@ export default function TransactionsPage() {
               <td colSpan={6} className="p-3 text-right">
                 Grand Total ({filteredTransactions.length} transaksi)
               </td>
+              <td className="p-3 text-center">
+                {filteredTransactions.reduce((sum, tx) => sum + tx.quantity, 0)}
+              </td>
               <td className="p-3 text-right">
                 Rp.{grandTotal.toLocaleString("id-ID")}
               </td>
@@ -317,6 +323,7 @@ export default function TransactionsPage() {
             </tr>
           </tbody>
         </table>
+
 
         {/* 🔹 Detail Dialog */}
         <Dialog open={!!selectedTx} onOpenChange={() => setSelectedTx(null)}>
@@ -345,36 +352,31 @@ export default function TransactionsPage() {
                   </p>
                 </div>
 
-                {["PENDING"].includes(formatStatus(selectedTx.status)) && (
+                {/* 🔹 Action Buttons */}
+                {formatStatus(selectedTx.status) === "PAID" && (
                   <div className="flex gap-3 mt-4">
                     <Button
                       className="bg-green-600 hover:bg-green-700"
                       onClick={() => updateTxStatus(selectedTx.id, "approve")}
                     >
-                      Approve
+                      Approve (→ DONE)
                     </Button>
                     <Button
                       variant="destructive"
                       onClick={() => updateTxStatus(selectedTx.id, "reject")}
                     >
-                      Reject
+                      Reject (→ REJECT)
                     </Button>
                   </div>
                 )}
 
-                {["PAID"].includes(formatStatus(selectedTx.status)) && (
+                {formatStatus(selectedTx.status) === "DONE" && (
                   <div className="flex gap-3 mt-4">
-                    <Button
-                      variant="secondary"
-                      onClick={() => updateTxStatus(selectedTx.id, "refund")}
-                    >
-                      Refund
-                    </Button>
                     <Button
                       variant="destructive"
                       onClick={() => updateTxStatus(selectedTx.id, "cancel")}
                     >
-                      Cancel
+                      Cancel (→ CANCELLED)
                     </Button>
                   </div>
                 )}

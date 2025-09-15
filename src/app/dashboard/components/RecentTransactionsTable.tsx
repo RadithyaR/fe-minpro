@@ -3,16 +3,15 @@
 import { useEffect, useState } from "react";
 import { Receipt } from "lucide-react";
 
-// Mapping status → warna badge
-const statusColors: Record<string, string> = {
-  CANCELLED: "bg-red-500",     // merah
-  EXPIRED: "bg-yellow-500",    // kuning
-  FAILED: "bg-blue-500",       // biru
-  PAID: "bg-green-500",        // hijau
-  PENDING: "bg-orange-500",    // oranye
-  REFUNDED: "bg-purple-500",   // ungu
+// Mapping status → warna badge (bg + text)
+const statusColors: Record<string, { bg: string; text: string }> = {
+  PENDING: { bg: "bg-yellow-100", text: "text-yellow-800" },
+  PAID: { bg: "bg-blue-100", text: "text-blue-800" },
+  DONE: { bg: "bg-green-100", text: "text-green-800" },
+  REJECTED: { bg: "bg-red-100", text: "text-red-800" },
+  CANCELLED: { bg: "bg-gray-200", text: "text-gray-800" },
+  EXPIRED: { bg: "bg-orange-100", text: "text-orange-800" },
 };
-
 
 export default function RecentTransactionsTable() {
   const [data, setData] = useState<any[]>([]);
@@ -64,34 +63,40 @@ export default function RecentTransactionsTable() {
               </tr>
             </thead>
             <tbody>
-              {data.map((tx, i) => (
-                <tr
-                  key={i}
-                  className="border-b last:border-none hover:bg-gray-50 transition-colors"
-                >
-                  <td className="px-4 py-3 text-gray-700">{tx.user}</td>
-                  <td className="px-4 py-3 text-gray-700">{tx.event}</td>
-                  <td className="px-4 py-3 font-medium text-gray-900">
-                    Rp {Number(tx.amount).toLocaleString("id-ID")}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`px-3 py-1 rounded-lg text-white text-xs font-semibold ${
-                        statusColors[tx.status?.toUpperCase()] || "bg-gray-400"
-                      }`}
-                    >
-                      {tx.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {new Date(tx.date).toLocaleDateString("id-ID", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </td>
-                </tr>
-              ))}
+              {data.map((tx, i) => {
+                const statusKey = tx.status?.toUpperCase();
+                const colors = statusColors[statusKey] || {
+                  bg: "bg-gray-100",
+                  text: "text-gray-800",
+                };
+
+                return (
+                  <tr
+                    key={i}
+                    className="border-b last:border-none hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-4 py-3 text-gray-700">{tx.user}</td>
+                    <td className="px-4 py-3 text-gray-700">{tx.event}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900">
+                      Rp {Number(tx.amount).toLocaleString("id-ID")}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${colors.bg} ${colors.text}`}
+                      >
+                        {tx.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {new Date(tx.date).toLocaleDateString("id-ID", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
